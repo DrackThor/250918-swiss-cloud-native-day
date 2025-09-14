@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Send Money — Demo</title>
+    <meta name="description"
+          content="Simple static demo for collecting credit card details and showing a confirmation modal (CVC redacted)."/>
+    <style>
+        :root {
+            --bg: #0f1226;
+            --bg2: #161a36;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text: #eef1ff;
+            --muted: #c8ccf8;
+            --accent: #8ab4ff;
+            --accent-2: #6ae3ff;
+            --error: #ff8a8a;
+            --ok: #77f29b;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, Apple Color Emoji, Segoe UI Emoji;
+            color: var(--text);
+            background: radial-gradient(1200px 800px at 20% -10%, #1d2250 0%, var(--bg) 50%, #0a0d1c 100%);
+            background-attachment: fixed;
+            display: grid;
+            place-items: center;
+            padding: 40px 16px;
+        }
+
+        .wrap {
+            width: min(100%, 920px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        header h1 {
+            margin: 0 0 6px;
+            font-size: clamp(24px, 4vw, 36px);
+            letter-spacing: 0.3px;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            opacity: 0.9;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(8px);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding: 22px;
+        }
+
+        @media (min-width: 860px) {
+            .content {
+                grid-template-columns: 1.1fr 0.9fr;
+            }
+        }
+
+        form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        input, textarea, button, select {
+            font: inherit;
+            color: var(--text);
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.06);
+            outline: none;
+            transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+        }
+
+        .input::placeholder {
+            color: #b8bce9;
+            opacity: .6;
+        }
+
+        .input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(138, 180, 255, .25);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .help {
+            font-size: 12px;
+            color: var(--muted);
+            opacity: .9;
+        }
+
+        .counter {
+            font-size: 12px;
+            color: var(--muted);
+            justify-self: end;
+        }
+
+        .inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .btn {
+            cursor: pointer;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #051022;
+            font-weight: 600;
+            letter-spacing: .2px;
+            transition: transform .06s ease, filter .2s ease;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--card-border);
+        }
+
+        /* Preview (right panel) */
+        .preview {
+            padding: 22px;
+        }
+
+        .fake-card {
+            border-radius: 18px;
+            padding: 18px;
+            background: linear-gradient(160deg, #2c2f5f, #1c2050 60%, #121438);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: var(--shadow);
+            min-height: 180px;
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 10px;
+        }
+
+        .fake-card .brand {
+            font-weight: 700;
+            letter-spacing: 0.6px;
+        }
+
+        .fake-card .num {
+            font-size: 20px;
+            letter-spacing: 2.5px;
+        }
+
+        .fake-card .row2 {
+            display: flex;
+            gap: 26px;
+        }
+
+        .fake-card small {
+            color: #cdd2ff;
+            opacity: .9;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(6, 10, 26, 0.6);
+            backdrop-filter: blur(3px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal {
+            width: min(560px, 100%);
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .modal header {
+            text-align: left;
+            padding: 18px 18px 0 18px;
+        }
+
+        .modal .body {
+            padding: 0 18px 18px;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+        }
+
+        .kv:last-child {
+            border: 0;
+        }
+
+        .kv .k {
+            color: var(--muted);
+        }
+
+        .modal .actions {
+            padding: 4px 18px 18px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .error-text {
+            color: var(--error);
+            font-size: 12px;
+            margin-top: -6px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <h1>Send Money — Demo</h1>
+        <p class="inline"><span>Single-file HTML app (no frameworks).</span><span class="badge">CVC is redacted in the preview</span>
+        </p>
+    </header>
+
+    <section class="card content">
+        <!-- FORM -->
+        <form id="cc-form" autocomplete="on" novalidate>
+            <div class="field">
+                <label for="name">Name on card</label>
+                <input class="input" id="name" name="name" placeholder="Jane Doe" required maxlength="64"/>
+                <div class="error-text" id="err-name" hidden>Please enter the card holder name.</div>
+            </div>
+
+            <div class="field">
+                <label for="number">Card number</label>
+                <input class="input" id="number" name="number" inputmode="numeric" autocomplete="cc-number"
+                       placeholder="1234 5678 9012 3456" required pattern="[0-9 ]{12,23}" maxlength="23"/>
+                <div class="error-text" id="err-number" hidden>Please enter a valid card number.</div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label for="expiry">Expiry (MM/YY)</label>
+                    <input class="input" id="expiry" name="expiry" placeholder="MM/YY" inputmode="numeric"
+                           autocomplete="cc-exp" required pattern="^(0[1-9]|1[0-2])\/(\d{2})$" maxlength="5"/>
+                    <div class="error-text" id="err-expiry" hidden>Enter a valid future date (MM/YY).</div>
+                </div>
+                <div class="field">
+                    <label for="cvc">CVC</label>
+                    <input class="input" id="cvc" name="cvc" placeholder="123" inputmode="numeric" autocomplete="cc-csc"
+                           required pattern="^\d{3,4}$" maxlength="4"/>
+                    <div class="error-text" id="err-cvc" hidden>3–4 digits.</div>
+                </div>
+            </div>
+
+            <div class="field">
+                <div class="inline">
+                    <label for="message">Message</label>
+                    <span class="counter" id="counter">0 / 50</span>
+                </div>
+                <textarea class="input" id="message" name="message" placeholder="Add a short note (optional)"
+                          maxlength="50" rows="3"></textarea>
+            </div>
+
+            <div class="actions">
+                <button type="button" class="btn secondary" id="resetBtn">Reset</button>
+                <button type="submit" class="btn" id="sendBtn">Send Money</button>
+            </div>
+            <p class="help">Demo only — do not use real card numbers. No data is sent anywhere.</p>
+        </form>
+
+        <!-- LIVE PREVIEW / FAKE CARD -->
+        <aside class="preview">
+            <div class="fake-card" aria-hidden="true">
+                <div class="brand">DEMO • VISA/Mastercard</div>
+                <div class="num" id="preview-number">•••• •••• •••• ••••</div>
+                <div class="row2">
+                    <small id="preview-name">JANE DOE</small>
+                    <small id="preview-expiry">MM/YY</small>
+                </div>
+                <small id="preview-msg" style="opacity:.8"></small>
+            </div>
+        </aside>
+    </section>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal card" role="document">
+        <header>
+            <h2 id="modal-title">Confirm details</h2>
+            <p class="help">CVC is hidden for safety in this demo.</p>
+        </header>
+        <div class="body" id="modal-body">
+            <!-- injected -->
+        </div>
+        <div class="actions">
+            <button class="btn secondary" id="closeBtn" type="button">Close</button>
+            <button class="btn" id="confirmBtn" type="button">Looks good</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Utility: format card number with spaces & Luhn check
+    function onlyDigits(str) {
+        return str.replace(/\D+/g, '');
+    }
+
+    function formatCard(num) {
+        return onlyDigits(num).replace(/(.{4})/g, '$1 ').trim();
+    }
+
+    function luhnCheck(num) {
+        const s = onlyDigits(num);
+        if (!s) return false;
+        let sum = 0, alt = false;
+        for (let i = s.length - 1; i >= 0; i--) {
+            let n = parseInt(s[i], 10);
+            if (alt) {
+                n *= 2;
+                if (n > 9) n -= 9;
+            }
+            sum += n;
+            alt = !alt;
+        }
+        return (sum % 10) === 0 && s.length >= 12; // basic guard
+    }
+
+    function futureExpiry(mmYY) {
+        const m = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(mmYY);
+        if (!m) return false;
+        const [_, mm, yy] = m; // eslint-disable-line no-unused-vars
+        const month = parseInt(mm, 10) - 1;
+        const year = 2000 + parseInt(yy, 10);
+        const lastDay = new Date(year, month + 1, 0);
+        const today = new Date();
+        lastDay.setHours(23, 59, 59, 999);
+        return lastDay >= today;
+    }
+
+    // Elements
+    const f = document.getElementById('cc-form');
+    const nameEl = document.getElementById('name');
+    const numEl = document.getElementById('number');
+    const expEl = document.getElementById('expiry');
+    const cvcEl = document.getElementById('cvc');
+    const msgEl = document.getElementById('message');
+    const counter = document.getElementById('counter');
+
+    const pNum = document.getElementById('preview-number');
+    const pName = document.getElementById('preview-name');
+    const pExp = document.getElementById('preview-expiry');
+    const pMsg = document.getElementById('preview-msg');
+
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modal-body');
+    const closeBtn = document.getElementById('closeBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Input behavior
+    numEl.addEventListener('input', () => {
+        const pos = numEl.selectionStart;
+        const before = numEl.value;
+        numEl.value = formatCard(numEl.value);
+        // Try to maintain caret position gracefully
+        const diff = numEl.value.length - before.length;
+        numEl.selectionEnd = (pos + diff);
+        pNum.textContent = numEl.value || '•••• •••• •••• ••••';
+        validateNumber(false);
+    });
+
+    expEl.addEventListener('input', (e) => {
+        let v = expEl.value.replace(/[^\d]/g, '');
+        if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2, 4);
+        expEl.value = v.slice(0, 5);
+        pExp.textContent = expEl.value || 'MM/YY';
+        validateExpiry(false);
+    });
+
+    nameEl.addEventListener('input', () => {
+        pName.textContent = (nameEl.value || 'JANE DOE').toUpperCase();
+        validateName(false);
+    });
+
+    cvcEl.addEventListener('input', () => {
+        cvcEl.value = cvcEl.value.replace(/\D+/g, '').slice(0, 4);
+        validateCvc(false);
+    });
+
+    msgEl.addEventListener('input', () => {
+        const len = msgEl.value.length;
+        counter.textContent = `${len} / 50`;
+        pMsg.textContent = msgEl.value;
+    });
+
+    resetBtn.addEventListener('click', () => {
+        f.reset();
+        pNum.textContent = '•••• •••• •••• ••••';
+        pName.textContent = 'JANE DOE';
+        pExp.textContent = 'MM/YY';
+        pMsg.textContent = '';
+        counter.textContent = '0 / 50';
+        hideErrors();
+    });
+
+    // Validation helpers
+    function showError(id, show) {
+        const el = document.getElementById(id);
+        el.hidden = !show;
+    }
+
+    function hideErrors() {
+        ['err-name', 'err-number', 'err-expiry', 'err-cvc'].forEach(id => showError(id, false));
+    }
+
+    function validateName(setCustom = true) {
+        const ok = nameEl.value.trim().length > 0;
+        showError('err-name', !ok);
+        if (setCustom) nameEl.setCustomValidity(ok ? '' : 'Required');
+        return ok;
+    }
+
+    function validateNumber(setCustom = true) {
+        const ok = luhnCheck(numEl.value);
+        showError('err-number', !ok);
+        if (setCustom) numEl.setCustomValidity(ok ? '' : 'Invalid');
+        return ok;
+    }
+
+    function validateExpiry(setCustom = true) {
+        const ok = futureExpiry(expEl.value);
+        showError('err-expiry', !ok);
+        if (setCustom) expEl.setCustomValidity(ok ? '' : 'Invalid');
+        return ok;
+    }
+
+    function validateCvc(setCustom = true) {
+        const ok = /^\d{3,4}$/.test(cvcEl.value);
+        showError('err-cvc', !ok);
+        if (setCustom) cvcEl.setCustomValidity(ok ? '' : 'Invalid');
+        return ok;
+    }
+
+    // Modal control
+    function openModal() {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        closeBtn.focus();
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+    closeBtn.addEventListener('click', closeModal);
+    confirmBtn.addEventListener('click', () => {
+        closeModal();
+        alert('Thanks! (Demo — nothing was sent)');
+    });
+
+    // Submit
+    f.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const ok = [validateName(), validateNumber(), validateExpiry(), validateCvc()].every(Boolean);
+        if (!ok) {
+            return;
+        }
+
+        const data = {
+            name: nameEl.value.trim(),
+            number: numEl.value.trim(),
+            expiry: expEl.value.trim(),
+            cvc: cvcEl.value.trim(),
+            message: msgEl.value.trim()
+        };
+
+        // Build modal content (CVC redacted)
+        const cvcMasked = data.cvc.replace(/./g, '•');
+        modalBody.innerHTML = `
+        <div class="kv"><div class="k">Name</div><div>${escapeHtml(data.name)}</div></div>
+        <div class="kv"><div class="k">Card number</div><div>${escapeHtml(data.number)}</div></div>
+        <div class="kv"><div class="k">Expiry</div><div>${escapeHtml(data.expiry)}</div></div>
+        <div class="kv"><div class="k">CVC</div><div>${cvcMasked}</div></div>
+        <div class="kv"><div class="k">Message</div><div>${escapeHtml(data.message || '(none)')}</div></div>
+      `;
+
+        openModal();
+    });
+
+    // Tiny HTML escaper for safety when injecting into modal
+    function escapeHtml(str) {
+        return (str || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+    }
+</script>
+</body>
+</html>

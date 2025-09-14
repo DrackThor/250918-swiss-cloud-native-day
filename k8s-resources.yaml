@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: static-nginx
+  labels:
+    app: static-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: static-nginx
+  template:
+    metadata:
+      labels:
+        app: static-nginx
+    spec:
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 101
+      #   runAsGroup: 101
+      #   fsGroup: 101
+      containers:
+        - name: nginx
+          image: drackthor2/bern:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: static-nginx
+  labels:
+    app: static-nginx
+spec:
+  type: ClusterIP
+  selector:
+    app: static-nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: static-nginx
+spec:
+  rules:
+    - host: static.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: static-nginx
+                port:
+                  number: 80
