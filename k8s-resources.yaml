@@ -68,8 +68,7 @@ metadata:
   name: static-nginx
 spec:
   rules:
-    - host: static.example.com
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
